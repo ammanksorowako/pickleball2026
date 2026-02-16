@@ -1,0 +1,620 @@
+<!-- Chosen Palette: Warm Energy (Warm Neutral Background #FDFBF7, Vibrant Coral #FF6B6B, Teal #4ECDC4, Deep Charcoal #2D3436) -->
+
+<!-- Application Structure Plan:
+1. **Hero Section:** "Easy & Fun" hook, defining Pickleball immediately.
+2. **Timeline & Growth:** A dual-column layout. Left: Interactive Vertical Timeline (HTML/CSS) tracking the history from 1965 USA to 2023 KONI membership. Right: Chart.js Bar Chart visualizing the explosive growth (based on US data in report as a proxy for trend).
+3. **The Court (Interactive Diagram):** A CSS-Grid based representation of the court (NO SVG). Users hover over zones (Kitchen, Service Court) to read rules specific to that area.
+4. **Equipment & Rules (Tabs):** A functional tab section to switch between Paddle/Ball specs and Core Rules (Serving, Scoring).
+5. **Technique Analysis (Dashboard):** A split view. Left: List of techniques (Dink, Drive, etc.). Right: Chart.js Radar chart dynamically updating to show the attribute profile (Power vs Control vs Difficulty) of the selected technique.
+6. **Benefits (Impact):** Plotly.js Bar chart showing the breakdown of Physical vs Mental vs Social benefits described in the "Sport is Medicine" section.
+Why: This structure moves from "What is it?" -> "History" -> "How to Play" -> "Advanced Skills" -> "Why Play?", creating a logical learning curve for the user.
+-->
+
+<!-- Visualization & Content Choices:
+1. **Global Growth:** Report Data (4.8m players, 40% growth) -> Goal: Compare/Change -> Chart.js Bar Chart -> Shows the magnitude of popularity. NO SVG.
+2. **History Timeline:** Report Data (1965, 2019, 2023 dates) -> Goal: Change/Organize -> Styled HTML/Tailwind Timeline -> Linear storytelling. NO SVG.
+3. **Court Zones:** Report Data (20x44ft, Kitchen, Lines) -> Goal: Inform/Organize -> CSS Grid Diagram -> Spatial awareness without vector graphics. NO SVG.
+4. **Technique Attributes:** Report Data (Dink, Drive, Smash descriptions) -> Goal: Compare (Attributes) -> Chart.js Radar Chart -> Perfect for multivariate comparison of skills. NO SVG.
+5. **Benefits Breakdown:** Report Data (Stress reduction, cardio, social) -> Goal: Relationships -> Plotly.js Bar Chart -> Categorical comparison of intangible benefits. NO SVG.
+-->
+
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<!DOCTYPE html>
+
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pickleball Indonesia: Easy & Fun</title>
+<script src="[https://cdn.tailwindcss.com](https://www.google.com/search?q=https://cdn.tailwindcss.com)"></script>
+<script src="[https://cdn.jsdelivr.net/npm/chart.js](https://www.google.com/search?q=https://cdn.jsdelivr.net/npm/chart.js)"></script>
+<script src="[https://cdn.plot.ly/plotly-2.27.0.min.js](https://www.google.com/search?q=https://cdn.plot.ly/plotly-2.27.0.min.js)"></script>
+<style>
+/* Custom Font */
+@import url('[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap](https://www.google.com/search?q=https://fonts.googleapis.com/css2%3Ffamily%3DPlus%2BJakarta%2BSans:wght%40300%3B400%3B600%3B800%26display%3Dswap)');
+
+```
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #FDFBF7; /* Warm Neutral */
+        color: #2D3436; /* Deep Charcoal */
+    }
+
+    /* Palette Classes */
+    .bg-primary { background-color: #FF6B6B; } /* Vibrant Coral */
+    .text-primary { color: #FF6B6B; }
+    .border-primary { border-color: #FF6B6B; }
+    
+    .bg-secondary { background-color: #4ECDC4; } /* Teal */
+    .text-secondary { color: #4ECDC4; }
+    .border-secondary { border-color: #4ECDC4; }
+
+    .bg-accent { background-color: #FFE66D; } /* Soft Yellow */
+    
+    .bg-card { background-color: #FFFFFF; }
+
+    /* Chart Container Utilities */
+    .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 600px; /* Tailwind max-w-xl approx */
+        margin-left: auto;
+        margin-right: auto;
+        height: 350px;
+        max-height: 400px;
+    }
+
+    /* Court Diagram CSS (No SVG) */
+    .court-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 15% 35% 35% 15%;
+        width: 100%;
+        max-width: 300px;
+        aspect-ratio: 20/44;
+        margin: 0 auto;
+        border: 4px solid #fff;
+        background-color: #4ECDC4;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .court-zone {
+        border: 1px solid rgba(255,255,255,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        padding: 2px;
+    }
+
+    .court-zone:hover {
+        background-color: #FF6B6B;
+        color: white;
+    }
+
+    .court-net {
+        grid-column: 1 / span 2;
+        grid-row: 2 / span 2; /* Visual placement logic adjusted for simplification */
+        border-top: 2px dashed white;
+        border-bottom: 2px dashed white;
+        height: 0px;
+        align-self: center;
+        z-index: 10;
+    }
+    
+    /* Specific Zones */
+    .zone-kitchen-top { grid-column: 1 / span 2; grid-row: 2; background-color: rgba(255,255,255,0.2); }
+    .zone-kitchen-bot { grid-column: 1 / span 2; grid-row: 3; background-color: rgba(255,255,255,0.2); }
+    .zone-left-top { grid-column: 1; grid-row: 1; }
+    .zone-right-top { grid-column: 2; grid-row: 1; }
+    .zone-left-bot { grid-column: 1; grid-row: 4; }
+    .zone-right-bot { grid-column: 2; grid-row: 4; }
+
+    /* Custom Scrollbar for Text Areas */
+    .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+        background-color: #FF6B6B;
+        border-radius: 3px;
+    }
+</style>
+
+```
+
+</head>
+<body class="antialiased">
+
+```
+<!-- Navigation -->
+<nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <span class="text-2xl font-bold text-primary">Pickleball<span class="text-gray-600">ID</span></span>
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <button onclick="scrollToSection('history')" class="text-gray-600 hover:text-primary transition font-medium">Sejarah</button>
+                <button onclick="scrollToSection('court')" class="text-gray-600 hover:text-primary transition font-medium">Lapangan & Aturan</button>
+                <button onclick="scrollToSection('techniques')" class="text-gray-600 hover:text-primary transition font-medium">Teknik</button>
+                <button onclick="scrollToSection('benefits')" class="text-gray-600 hover:text-primary transition font-medium">Manfaat</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<header class="relative bg-white overflow-hidden">
+    <div class="max-w-7xl mx-auto">
+        <div class="relative z-10 pb-8 bg-white sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
+            <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
+                <div class="sm:text-center lg:text-left">
+                    <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+                        <span class="block xl:inline">Olahraga Pickleball</span>
+                        <span class="block text-primary">"Easy and Fun"</span>
+                    </h1>
+                    <p class="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                        Gabungan tenis, badminton, dan tenis meja yang inklusif. Dari Bainbridge Island hingga menjadi anggota resmi KONI Indonesia (2023). Temukan mengapa olahraga ini tumbuh 40% dalam setahun!
+                    </p>
+                    <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+                        <div class="rounded-md shadow">
+                            <button onclick="scrollToSection('history')" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-red-500 md:py-4 md:text-lg md:px-10 transition">
+                                Mulai Eksplorasi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <!-- Decorative CSS shape NO SVG -->
+    <div class="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2 bg-secondary opacity-10 rounded-bl-[100px]"></div>
+</header>
+
+<!-- Section: History & Growth -->
+<section id="history" class="py-16 bg-[#FDFBF7]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-base text-primary font-semibold tracking-wide uppercase">Asal Usul</h2>
+            <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">Dari Halaman Belakang ke Panggung Dunia</p>
+            <p class="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
+                Perjalanan sejarah Pickleball dari penemuannya pada tahun 1965 oleh Joel Pritchard hingga perkembangannya yang pesat di Indonesia.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            
+            <!-- Visualization 1: Timeline (Styled HTML) -->
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-primary">
+                <h3 class="text-xl font-bold mb-6 text-gray-800">Garis Waktu Penting</h3>
+                <div class="relative border-l-2 border-gray-200 ml-3 space-y-8">
+                    
+                    <div class="relative pl-8">
+                        <div class="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-primary border-2 border-white"></div>
+                        <h4 class="text-lg font-bold text-gray-900">1965 - Kelahiran</h4>
+                        <p class="text-gray-600 text-sm mt-1">Ditemukan di Bainbridge Island, USA oleh Joel Pritchard, Bill Bell, dan Barney McCallum untuk mengatasi kebosanan keluarga.</p>
+                    </div>
+
+                    <div class="relative pl-8">
+                        <div class="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-secondary border-2 border-white"></div>
+                        <h4 class="text-lg font-bold text-gray-900">1979 - Masuk Jakarta</h4>
+                        <p class="text-gray-600 text-sm mt-1">Bill & Tin Bell memperkenalkan Pickleball di lingkungan Kedutaan Besar Amerika di Jakarta.</p>
+                    </div>
+
+                    <div class="relative pl-8">
+                        <div class="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-secondary border-2 border-white"></div>
+                        <h4 class="text-lg font-bold text-gray-900">2019 - Era Akademik (UNJ)</h4>
+                        <p class="text-gray-600 text-sm mt-1">Jeff van Der Hulst (IFP) mengunjungi UNJ. "Caksus" (Susilo) mulai mengembangkan secara masif melalui universitas.</p>
+                    </div>
+
+                    <div class="relative pl-8">
+                        <div class="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-primary border-2 border-white"></div>
+                        <h4 class="text-lg font-bold text-gray-900">13 Maret 2023 - Anggota KONI</h4>
+                        <p class="text-gray-600 text-sm mt-1">Indonesia Pickleball Federation (IPF) resmi menjadi anggota Komite Olahraga Nasional Indonesia.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization 2: Growth Stats (Chart.js) -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-xl font-bold mb-2 text-gray-800">Ledakan Popularitas (Konteks Global)</h3>
+                <p class="text-sm text-gray-500 mb-6">Laporan menyoroti pertumbuhan masif di AS sebagai indikator potensi global.</p>
+                
+                <div class="chart-container">
+                    <canvas id="growthChart"></canvas>
+                </div>
+                
+                <div class="mt-4 grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-3 rounded text-center">
+                        <span class="block text-2xl font-bold text-primary">40%</span>
+                        <span class="text-xs text-gray-500 uppercase">Pertumbuhan 2019</span>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded text-center">
+                        <span class="block text-2xl font-bold text-secondary">25+</span>
+                        <span class="text-xs text-gray-500 uppercase">Provinsi di Indonesia</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Section: The Court & Rules -->
+<section id="court" class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-base text-secondary font-semibold tracking-wide uppercase">Arena & Aturan</h2>
+            <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">Pahami Lapangan</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            
+            <!-- Visualization 3: CSS Grid Court Diagram (Interactive) -->
+            <div class="flex flex-col items-center">
+                <div class="mb-4 text-center">
+                    <span class="inline-block px-3 py-1 bg-gray-100 text-xs font-semibold rounded-full text-gray-600">Arahkan kursor ke area lapangan</span>
+                </div>
+                <div class="court-grid">
+                    <!-- Top Service Courts -->
+                    <div class="court-zone zone-left-top" onmouseover="updateCourtInfo('service')" onmouseout="resetCourtInfo()">Left Court</div>
+                    <div class="court-zone zone-right-top" onmouseover="updateCourtInfo('service')" onmouseout="resetCourtInfo()">Right Court</div>
+                    
+                    <!-- Kitchen -->
+                    <div class="court-zone zone-kitchen-top" onmouseover="updateCourtInfo('kitchen')" onmouseout="resetCourtInfo()">Kitchen (NVZ)</div>
+                    
+                    <!-- Net Logic -->
+                    <div class="court-net"></div>
+
+                    <!-- Kitchen -->
+                    <div class="court-zone zone-kitchen-bot" onmouseover="updateCourtInfo('kitchen')" onmouseout="resetCourtInfo()">Kitchen (NVZ)</div>
+                    
+                    <!-- Bottom Service Courts -->
+                    <div class="court-zone zone-left-bot" onmouseover="updateCourtInfo('service')" onmouseout="resetCourtInfo()">Left Court</div>
+                    <div class="court-zone zone-right-bot" onmouseover="updateCourtInfo('service')" onmouseout="resetCourtInfo()">Right Court</div>
+                </div>
+                <div class="mt-4 text-center text-sm text-gray-500">
+                    Dimensi: 20 x 44 kaki (6.1m x 13.4m)
+                </div>
+            </div>
+
+            <!-- Interactive Info Panel -->
+            <div class="bg-[#FDFBF7] rounded-xl p-8 border border-gray-100 h-full flex flex-col justify-center">
+                <div id="court-info-title" class="text-2xl font-bold text-gray-900 mb-2">Area Lapangan</div>
+                <div id="court-info-desc" class="text-gray-600 text-lg leading-relaxed">
+                    Arahkan kursor pada diagram lapangan di sebelah kiri untuk mempelajari aturan spesifik setiap zona.
+                </div>
+                
+                <div class="mt-8 border-t pt-6">
+                    <h4 class="font-bold text-gray-800 mb-3">Aturan Kunci:</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li class="flex items-start">
+                            <span class="mr-2 text-primary text-xl">•</span>
+                            <span><strong>Two-Bounce Rule:</strong> Bola harus memantul sekali di sisi penerima DAN sekali di sisi server sebelum boleh di-volley.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2 text-primary text-xl">•</span>
+                            <span><strong>Skor:</strong> Game dimainkan hingga 11 poin, harus menang selisih 2 poin.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2 text-primary text-xl">•</span>
+                            <span><strong>Servis:</strong> Harus underhand (bawah tangan) dan diagonal.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Section: Techniques -->
+<section id="techniques" class="py-16 bg-[#FDFBF7]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-base text-primary font-semibold tracking-wide uppercase">Keterampilan</h2>
+            <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">Analisis Teknik</p>
+            <p class="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
+                Pickleball menggabungkan strategi catur dengan pukulan raket. Pilih teknik di bawah ini untuk melihat profilnya.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Selection List -->
+            <div class="col-span-1 space-y-2">
+                <button onclick="updateTechnique('serve')" class="w-full text-left px-4 py-3 bg-white rounded-lg shadow hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary transition technique-btn active-tech" data-tech="serve">
+                    <span class="font-bold text-gray-800">Serve / Drop Serve</span>
+                    <p class="text-xs text-gray-500">Awal permainan</p>
+                </button>
+                <button onclick="updateTechnique('dink')" class="w-full text-left px-4 py-3 bg-white rounded-lg shadow hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary transition technique-btn" data-tech="dink">
+                    <span class="font-bold text-gray-800">Dink</span>
+                    <p class="text-xs text-gray-500">Pukulan halus di Kitchen</p>
+                </button>
+                <button onclick="updateTechnique('drive')" class="w-full text-left px-4 py-3 bg-white rounded-lg shadow hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary transition technique-btn" data-tech="drive">
+                    <span class="font-bold text-gray-800">Drive</span>
+                    <p class="text-xs text-gray-500">Pukulan keras mendatar</p>
+                </button>
+                <button onclick="updateTechnique('smash')" class="w-full text-left px-4 py-3 bg-white rounded-lg shadow hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary transition technique-btn" data-tech="smash">
+                    <span class="font-bold text-gray-800">Overhead Smash</span>
+                    <p class="text-xs text-gray-500">Pukulan mematikan</p>
+                </button>
+            </div>
+
+            <!-- Visualization 4: Radar Chart (Chart.js) -->
+            <div class="col-span-1 md:col-span-2 bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
+                <h3 id="tech-title" class="text-2xl font-bold text-gray-900 mb-2">Serve</h3>
+                <p id="tech-desc" class="text-center text-gray-600 mb-6 max-w-lg">
+                    Pukulan awal permainan. Harus dilakukan di bawah pinggang (underhand). Drop Serve adalah variasi di mana bola dijatuhkan sebelum dipukul.
+                </p>
+                <div class="chart-container">
+                    <canvas id="techniqueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section: Benefits -->
+<section id="benefits" class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            
+            <div>
+                <h2 class="text-base text-secondary font-semibold tracking-wide uppercase">Dampak Positif</h2>
+                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">Sport is Medicine</p>
+                <p class="mt-4 text-lg text-gray-500">
+                    Berdasarkan riset (Marley, 2017; Ryu et al, 2018), Pickleball memberikan dampak signifikan bagi kesehatan holistik, terutama bagi lansia namun tetap menantang bagi kaum muda.
+                </p>
+                
+                <div class="mt-8 space-y-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-red-100 text-primary font-bold">1</div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-medium text-gray-900">Kardiovaskular</h4>
+                            <p class="text-gray-500 text-sm">Latihan aerobik moderat yang menyehatkan jantung.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-teal-100 text-secondary font-bold">2</div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-medium text-gray-900">Psikologis</h4>
+                            <p class="text-gray-500 text-sm">Mengurangi stres dan meningkatkan otentisitas diri.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 font-bold">3</div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-medium text-gray-900">Sosial</h4>
+                            <p class="text-gray-500 text-sm">Inklusif dan membangun komunitas persahabatan.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization 5: Plotly.js Bar Chart -->
+            <div class="bg-[#FDFBF7] rounded-xl shadow-lg p-2 border border-gray-200">
+                <div id="benefitsPlot" class="w-full h-[400px]"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-gray-900 text-white py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-2xl font-bold tracking-wider text-primary mb-4">PICKLEBALL INDONESIA</h2>
+        <p class="text-gray-400 max-w-md mx-auto mb-8">
+            Sumber: "Olahraga Pickleball Indonesia" oleh Susilo, M.Pd., D.Ed. (UNJ Press, 2023).
+        </p>
+        <div class="border-t border-gray-800 pt-8 text-sm text-gray-500">
+            &copy; 2023 Visualisasi Interaktif Edukasi.
+        </div>
+    </div>
+</footer>
+
+<!-- JavaScript Logic -->
+<script>
+    // --- 1. Navigation Logic ---
+    function scrollToSection(id) {
+        document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // --- 2. Chart.js Global Config (Label Wrapping & Tooltips) ---
+    // Helper to wrap text
+    const wrapLabel = (str, limit) => {
+        const words = str.split(' ');
+        let aux = [];
+        let concat = [];
+        for (let i = 0; i < words.length; i++) {
+            concat.push(words[i]);
+            if (concat.join(' ').length > limit) {
+                aux.push(concat.slice(0, -1).join(' '));
+                concat = [words[i]];
+            }
+        }
+        aux.push(concat.join(' '));
+        return aux;
+    };
+
+    const commonChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    title: function(tooltipItems) {
+                        const item = tooltipItems[0];
+                        let label = item.chart.data.labels[item.dataIndex];
+                        if (Array.isArray(label)) return label.join(' ');
+                        return label;
+                    }
+                }
+            }
+        }
+    };
+
+    // --- 3. Growth Chart (Chart.js Bar) ---
+    const growthCtx = document.getElementById('growthChart').getContext('2d');
+    const growthLabels = ['Pemain AS 2018 (Juta)', 'Pertumbuhan 2019 (%)'];
+    const growthData = {
+        labels: growthLabels.map(l => wrapLabel(l, 16)),
+        datasets: [{
+            label: 'Metrik Pertumbuhan',
+            data: [4.8, 40],
+            backgroundColor: ['#4ECDC4', '#FF6B6B'],
+            borderWidth: 1
+        }]
+    };
+    new Chart(growthCtx, {
+        type: 'bar',
+        data: growthData,
+        options: {
+            ...commonChartOptions,
+            plugins: {
+                ...commonChartOptions.plugins,
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // --- 4. Court Interaction Logic ---
+    const courtInfo = {
+        'kitchen': {
+            title: "Kitchen (Non-Volley Zone)",
+            desc: "Area berjarak 7 kaki dari net. Pemain DILARANG melakukan pukulan volley (memukul bola di udara tanpa memantul) saat berdiri di area ini. Ini mencegah smash jarak dekat yang mematikan."
+        },
+        'service': {
+            title: "Area Servis (Left/Right)",
+            desc: "Servis harus dilakukan secara diagonal ke area servis lawan. Bola harus memantul di area ini. Garis tengah, garis samping, dan garis belakang adalah batasnya."
+        }
+    };
+
+    const defaultTitle = document.getElementById('court-info-title').innerText;
+    const defaultDesc = document.getElementById('court-info-desc').innerText;
+
+    function updateCourtInfo(zone) {
+        document.getElementById('court-info-title').innerText = courtInfo[zone].title;
+        document.getElementById('court-info-title').className = "text-2xl font-bold text-primary mb-2 transition-colors";
+        document.getElementById('court-info-desc').innerText = courtInfo[zone].desc;
+    }
+
+    function resetCourtInfo() {
+        document.getElementById('court-info-title').innerText = defaultTitle;
+        document.getElementById('court-info-title').className = "text-2xl font-bold text-gray-900 mb-2";
+        document.getElementById('court-info-desc').innerText = defaultDesc;
+    }
+
+    // --- 5. Technique Radar Chart (Dynamic) ---
+    const techData = {
+        'serve': { 
+            desc: "Pukulan awal permainan. Harus dilakukan di bawah pinggang (underhand). Drop Serve adalah variasi di mana bola dijatuhkan sebelum dipukul.",
+            scores: [3, 8, 4, 9, 2] // Power, Control, Strategy, Frequency, Difficulty
+        },
+        'dink': { 
+            desc: "Pukulan lembut parabola pendek yang jatuh di Kitchen lawan. Kunci permainan tingkat tinggi untuk memaksa lawan membuat kesalahan.",
+            scores: [2, 10, 9, 8, 7]
+        },
+        'drive': { 
+            desc: "Pukulan keras mendatar (groundstroke) dari garis belakang. Mirip dengan tenis, digunakan untuk menekan lawan.",
+            scores: [9, 5, 4, 6, 5]
+        },
+        'smash': { 
+            desc: "Pukulan Overhead yang kuat untuk mematikan bola tanggung (Lob) dari lawan. Membutuhkan timing yang tepat.",
+            scores: [10, 4, 3, 3, 6]
+        }
+    };
+
+    const radarCtx = document.getElementById('techniqueChart').getContext('2d');
+    const radarLabels = ['Kekuatan (Power)', 'Kontrol (Control)', 'Strategi', 'Frekuensi', 'Kesulitan'];
+    
+    let radarChart = new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+            labels: radarLabels.map(l => wrapLabel(l, 16)),
+            datasets: [{
+                label: 'Atribut Teknik',
+                data: techData['serve'].scores,
+                fill: true,
+                backgroundColor: 'rgba(255, 107, 107, 0.2)',
+                borderColor: '#FF6B6B',
+                pointBackgroundColor: '#FF6B6B',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#FF6B6B'
+            }]
+        },
+        options: {
+            ...commonChartOptions,
+            scales: {
+                r: {
+                    angleLines: { color: 'rgba(0,0,0,0.1)' },
+                    grid: { color: 'rgba(0,0,0,0.1)' },
+                    pointLabels: { font: { size: 12, family: 'Plus Jakarta Sans' } },
+                    suggestedMin: 0,
+                    suggestedMax: 10
+                }
+            }
+        }
+    });
+
+    function updateTechnique(techKey) {
+        // Update Text
+        const titleMap = { 'serve': 'Serve / Drop Serve', 'dink': 'Dink', 'drive': 'Drive', 'smash': 'Overhead Smash' };
+        document.getElementById('tech-title').innerText = titleMap[techKey];
+        document.getElementById('tech-desc').innerText = techData[techKey].desc;
+
+        // Update Active Button Style
+        document.querySelectorAll('.technique-btn').forEach(btn => {
+            btn.classList.remove('ring-2', 'ring-primary', 'bg-gray-50');
+            if(btn.dataset.tech === techKey) {
+                btn.classList.add('ring-2', 'ring-primary', 'bg-gray-50');
+            }
+        });
+
+        // Update Chart
+        radarChart.data.datasets[0].data = techData[techKey].scores;
+        radarChart.update();
+    }
+
+    // --- 6. Benefits Chart (Plotly.js) ---
+    // Using Plotly for a different visual style (Horizontal Bars)
+    const plotlyData = [{
+        type: 'bar',
+        x: [85, 90, 95], // Conceptual values based on emphasis in report
+        y: ['Fisik (Jantung/Keseimbangan)', 'Mental (Stress/Otentisitas)', 'Sosial (Inklusivitas)'].map(l => l.match(/.{1,20}/g).join('<br>')), // Wrapping text for y-axis
+        orientation: 'h',
+        marker: {
+            color: ['#FF6B6B', '#4ECDC4', '#FFE66D'],
+            opacity: 0.8
+        }
+    }];
+
+    const plotlyLayout = {
+        title: { text: 'Dampak Relatif (Kualitatif)', font: { family: 'Plus Jakarta Sans', size: 18 } },
+        font: { family: 'Plus Jakarta Sans' },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { l: 150, r: 20, t: 40, b: 40 },
+        xaxis: { title: 'Tingkat Dampak (Konseptual)', range: [0, 100] },
+        yaxis: { automargin: true }
+    };
+
+    const config = { responsive: true, displayModeBar: false };
+
+    Plotly.newPlot('benefitsPlot', plotlyData, plotlyLayout, config);
+
+</script>
+
+```
+
+</body>
+</html>
